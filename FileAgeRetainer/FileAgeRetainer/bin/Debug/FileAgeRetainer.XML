@@ -1,0 +1,934 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>FileAgeRetainer</name>
+    </assembly>
+    <members>
+        <member name="T:FileAgeRetainer.CachedFsInfo">
+            <summary>
+            Cached File System information record, these are added as value to the concurrent dictionary with a key of the full path of the fs object
+            </summary>
+        </member>
+        <member name="F:FileAgeRetainer.CachedFsInfo._type">
+            <summary>
+            type of object for this cached item
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.CachedFsInfo.FullPath">
+            <summary>
+            full path of the file system object (e.g. c:\temp\myfile.txt)
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.CachedFsInfo.HashString">
+            <summary>
+            a string of the hash on the content checksum of the object.  directory hashes will be empty string unless option FsHashCalculateWholeDirectoryHashes is true
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.CachedFsInfo.Type">
+            <summary>
+            the file system object type - file, directory or NotExist
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.CachedFsInfo.IsTypeCheckStale">
+            <summary>
+            determines if the type is stale, outside of FsTypeCheckToleranceSeconds, object will attempt to correct its object type when outside this tolerance.  useful when things go 'NotExist'
+            </summary>
+            <returns>true if type check out of tolerance time</returns>
+        </member>
+        <member name="P:FileAgeRetainer.CachedFsInfo.PreservationTimeStart">
+            <summary>
+            the first time, in ticks, when the FileAgeRetainer saw this CachedFsInfo
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.CachedFsInfo.SignalChanged">
+            <summary>
+            signal to this object that its checksum has changed, will update appropriate class instance variables / do hash string calc etc. remember to readd the transformed object back to dictionary if this is desired
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.CachedFsInfo.SignalRenamed">
+            <summary>
+            signal to this object that it has been renamed
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.CachedFsInfo.#ctor(System.String,System.Boolean,System.Boolean,System.Boolean,FileAgeRetainer.CommonComponents.FsHashAlgorithm,System.Boolean)">
+            <summary>
+            instantiate a CachedFsInfo
+            </summary>
+            <param name="fullPath">the full file system path of the fs object representing this CachedFsInfo</param>
+            <param name="FsTypeChangeCausePreservationReset">true if type changes for an item will prompt a preservation reset</param>
+            <param name="FsChecksumChangeCausePreservationReset">true if checksum change will cause a preservation reset</param>
+            <param name="FsRenameCausePreservationReset">true if object rename will cause a preservation reset</param>
+            <param name="hashAlgorithm">hash algorithm used for this CachedFsInfo</param>
+            <param name="FsHashCalculateWholeDirectoryHashes">true if entire directory contents (with subtree) should be used for calculating checksum on this if a directory - EXPENSIVE</param>
+        </member>
+        <member name="M:FileAgeRetainer.CachedFsInfo.#ctor(System.String,FileAgeRetainer.CommonComponents.FsObjType,System.String,System.Int64,System.Boolean,System.Boolean,System.Boolean,FileAgeRetainer.CommonComponents.FsHashAlgorithm,System.Boolean)">
+            <summary>
+            instantiate a CachedFsInfo object instance - bypasses any triggered calculations.  used for deserialization from disk cache
+            </summary>
+            <param name="fullPath">the full file system path of the fs object representing this CachedFsInfo</param>
+            <param name="type">the FsObjType of the fs object that this cached record represents</param>
+            <param name="hashString">the hash string of the fs object content this CachedFsInfo represents</param>
+            <param name="PreservationTimeStart">time, in ticks, that this object was first seen by the service</param>
+            <param name="FsTypeChangeCausePreservationReset">true if type changes for an item will prompt a preservation reset</param>
+            <param name="FsChecksumChangeCausePreservationReset">true if checksum change will cause a preservation reset</param>
+            <param name="FsRenameCausePreservationReset">true if object rename will cause a preservation reset</param>
+            <param name="hashAlgorithm">hash algorithm used for this CachedFsInfo</param>
+            <param name="FsHashCalculateWholeDirectoryHashes">true if entire directory contents (with subtree) should be used for calculating checksum on this if a directory - EXPENSIVE</param>
+        </member>
+        <member name="T:FileAgeRetainer.CommonComponents">
+            <summary>
+            Common components for the FileAgeRetainerService - e.g. hashing things, enums etc. used throughout service by other classes
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.CommonComponents.ParallelOptions">
+            <summary>
+            Options for Parallel processes
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.CommonComponents.HashAlgorithm">
+            <summary>
+            hash algorithm used by default - typically set from global options, and used when certain overloads for calculating hashes are invoked
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.CommonComponents.HashWholeDirectories">
+            <summary>
+            true if should calculate directory subtree content hashes on a directory - EXPENSIVE - typically set from global options, and used when certain overloads for calculating hashes are invoked
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.CommonComponents.ExecutingAssemblyDirectory">
+            <summary>
+            the directory in which this assembly is executing, used for where to locate serialized caches for FileAgeRetainerItem
+            </summary>
+        </member>
+        <member name="T:FileAgeRetainer.CommonComponents.FsObjType">
+            <summary>
+            enumeration for the type of fs object a cached record represents
+            </summary>
+        </member>
+        <member name="F:FileAgeRetainer.CommonComponents.FsObjType.File">
+            <summary>
+            a file 
+            </summary>
+        </member>
+        <member name="F:FileAgeRetainer.CommonComponents.FsObjType.Directory">
+            <summary>
+            a directory
+            </summary>
+        </member>
+        <member name="F:FileAgeRetainer.CommonComponents.FsObjType.NotExist">
+            <summary>
+            a non-existent object
+            </summary>
+        </member>
+        <member name="T:FileAgeRetainer.CommonComponents.FsHashAlgorithm">
+            <summary>
+            enumeration for the hashing algorithm to use - xxHash is fastest
+            </summary>
+        </member>
+        <member name="F:FileAgeRetainer.CommonComponents.FsHashAlgorithm.xxHash">
+            <summary>
+            xxHash algorithm
+            </summary>
+        </member>
+        <member name="F:FileAgeRetainer.CommonComponents.FsHashAlgorithm.SHA1">
+            <summary>
+            SHA1 algorithm
+            </summary>
+        </member>
+        <member name="F:FileAgeRetainer.CommonComponents.FsHashAlgorithm.MD5">
+            <summary>
+            MD5 algorithm
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.CommonComponents.GetObjType(System.String)">
+            <summary>
+            get the object type from a full path of an fs object
+            </summary>
+            <param name="fullPath">the full path of the fs object to get the type of</param>
+            <returns>type of object the specified path equates to</returns>
+        </member>
+        <member name="M:FileAgeRetainer.CommonComponents.GetHashString(System.String,FileAgeRetainer.CommonComponents.FsHashAlgorithm)">
+            <summary>
+            get a hash of a string - can be whatever input - used for serialization dictionary naming
+            </summary>
+            <param name="dataToHash">string of data to hash</param>
+            <param name="hashAlgorithm">hash algorithm to use</param>
+            <returns>hashed string</returns>
+        </member>
+        <member name="M:FileAgeRetainer.CommonComponents.GetHashString(System.String,FileAgeRetainer.CommonComponents.FsObjType,FileAgeRetainer.CommonComponents.FsHashAlgorithm,System.Boolean)">
+            <summary>
+            get hash of fs Object using specified options
+            </summary>
+            <param name="fullPath">full path to fs object</param>
+            <param name="type">object type - file, directory, notExist</param>
+            <param name="hashAlgorithm">hash algorithm to use</param>
+            <param name="hashWholeDirectories">calculate hashes of entire directory subtrees - EXPENSIVE</param>
+            <returns>hash string</returns>
+        </member>
+        <member name="M:FileAgeRetainer.CommonComponents.GetHashString(System.String,FileAgeRetainer.CommonComponents.FsObjType)">
+            <summary>
+            get hash of fs Object using global defaults, while specifying the object type (do this if already known, cheaper)
+            </summary>
+            <param name="fullPath">full fs path to object to be hashed</param>
+            <param name="type">object type - file, directory, notExist</param>
+            <returns>hash string in the global default hash algorithm</returns>
+        </member>
+        <member name="M:FileAgeRetainer.CommonComponents.GetHashString(System.String)">
+            <summary>
+            get hash of fs Object using global defaults, Determine the object type now (do this only if obj type not known)
+            </summary>
+            <param name="fullPath">full fs path to object to be hashed</param>
+            <returns>hash string in the global default hash algorithm</returns>
+        </member>
+        <member name="M:FileAgeRetainer.CommonComponents.CompressFolder(System.IO.DirectoryInfo,System.Boolean)">
+            <summary>
+            NOT YET IMPLEMENTED - compress a folder using transparent compression
+            </summary>
+            <param name="directory">the full path of the directory to compress</param>
+            <param name="recursive">perform action on subtree of root if true</param>
+            <returns></returns>
+        </member>
+        <member name="M:FileAgeRetainer.CommonComponents.UncompressFolder(System.IO.DirectoryInfo,System.Boolean)">
+            <summary>
+            NOT YET IMPLEMENTED - uncompress a directory using NTFS transparent compression
+            </summary>
+            <param name="directory">the path of the directory to uncompress</param>
+            <param name="recursive">perform the operation on subtree if true</param>
+            <returns>return code from operation</returns>
+        </member>
+        <member name="M:FileAgeRetainer.CommonComponents.VolumeSupportsCompression(System.String)">
+            <summary>
+            NOT YET IMPLEMENTED - determine if the volume file system supports transparent compression
+            </summary>
+            <param name="volumeToCheck">volume to check</param>
+            <returns>true if volume file system supports transparent compression</returns>
+        </member>
+        <member name="M:FileAgeRetainer.CommonComponents.IsFsObjectCompressed(System.String)">
+            <summary>
+            determine if a given object is compressed with transparent compression via flags on object
+            </summary>
+            <param name="fullPath">full path to object to check</param>
+            <returns>true if object is compressed with transparent compression as indicated by object flags</returns>
+        </member>
+        <member name="M:FileAgeRetainer.CommonComponents.GetFsItemList(System.String,FileAgeRetainer.CommonComponents.FsObjType,System.Boolean,System.String,System.Boolean,System.Boolean)">
+            <summary>
+            get a list of files / directories within a fs search path
+            </summary>
+            <param name="searchRoot">full path of where to search for file system objects</param>
+            <param name="rootType">the type of the root object - file or directory</param>
+            <param name="subtree">search the subtree of a directory if true</param>
+            <param name="filter">the filter e.g. *.* for the search</param>
+            <param name="includeDirectories">include directories in the results, false will not return any directories under the search root</param>
+            <param name="includeFiles">include files in the results, false will not return any files under the search root</param>
+            <returns>a list of files / directories under the search root considering passed params</returns>
+        </member>
+        <member name="M:FileAgeRetainer.CommonComponents.#cctor">
+            <summary>
+            instantiation of the CommonComponents class
+            </summary>
+        </member>
+        <member name="T:FileAgeRetainer.DiagnosticsEventHandler">
+            <summary>
+            Handler for event logging to various output channels - writes to application log when used in such a fashion to the log with app.config option DiagnosticsEventLog / DiagnosticsEventsource as source / log
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.DiagnosticsEventHandler.#cctor">
+            <summary>
+            instantiation of the DiagnosticsEventHandler static class
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.DiagnosticsEventHandler.CheckRegisterEventLogSource(System.String,System.Diagnostics.EventLog)">
+            <summary>
+            check for, and register if missing, the event source for the application as specified
+            </summary>
+            <param name="eventSource">Event source to use</param>
+            <param name="eventLog">the log to use</param>
+        </member>
+        <member name="M:FileAgeRetainer.DiagnosticsEventHandler.AttemptCreateSampleEvent(System.String)">
+            <summary>
+            create a sample event - used in initialization of eventlog source
+            </summary>
+            <param name="eventSource">source to use for sample event creation - using this classes eventLog</param>
+            <returns>true if log write OK</returns>
+        </member>
+        <member name="M:FileAgeRetainer.DiagnosticsEventHandler.LogEvent(System.Int32,System.String,System.Diagnostics.EventLogEntryType)">
+            <summary>
+            Log Event - call fuller overload with default output channels (for now app log and debug console)
+            </summary>
+            <param name="eventId">EventID - 0-65535</param>
+            <param name="eventMessage">Event message</param>
+            <param name="type">Event Log Entry Type</param>
+        </member>
+        <member name="M:FileAgeRetainer.DiagnosticsEventHandler.LogEvent(System.Int32,System.String,System.Diagnostics.EventLogEntryType,FileAgeRetainer.DiagnosticsEventHandler.OutputChannels)">
+            <summary>
+            Log Event - specify output channels for event...
+            </summary>
+            <param name="eventId">EventID - 0-65535</param>
+            <param name="eventMessage">Event message</param>
+            <param name="type">Event Log Entry Type</param>
+            <param name="outputChannels">Output channels (bitwise enum) - application log, debug console, smtp mail, jabber etc.</param>
+        </member>
+        <member name="T:FileAgeRetainer.DiagnosticsEventHandler.OutputChannels">
+            <summary>
+            enumeration of output channels to use (bitwise)
+            </summary>
+        </member>
+        <member name="T:FileAgeRetainer.FileAgeRetainer">
+            <summary>
+            FileAgeRetainer service class
+            </summary>
+        </member>
+        <member name="F:FileAgeRetainer.FileAgeRetainer.retainers">
+            <summary>
+            list of FileAgeRetainerItem - these accessed by retainer item workers directly after they determine thier index position.  allows for multiple retainers to operate safely together when all working in different threads and on different watch roots
+            </summary>
+        </member>
+        <member name="F:FileAgeRetainer.FileAgeRetainer.RetainersInitializing">
+            <summary>
+            true if the retainer items for this service are currently initializing, will block queue watcher work
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainer.#ctor">
+            <summary>
+            instantiate FileAgeRetainer
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainer.OnStart(System.String[])">
+            <summary>
+            executed at service startup
+            </summary>
+            <param name="args">arguments passed to service used at startup</param>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainer.SetInitWorkToTimer">
+            <summary>
+            prepare time and start it for service initialization work - to prevent service control from being unresponsive due to long running process
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainer.SetupRetainerItems">
+            <summary>
+            setup FileAgeRetainer items in a list.  this memory object accessed by index so items end up in the right caches when multiple monitored fs roots are configured
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainer.startupTimer_Elapsed(System.Object,System.Timers.ElapsedEventArgs)">
+            <summary>
+            when initialization timer elapses, setup the retainer items
+            </summary>
+            <param name="sender">event metadata on sender</param>
+            <param name="e">arguements from the event, not utilized here</param>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainer.OnStop">
+            <summary>
+            shut down the service when a 'stop' command is given
+            </summary>
+        </member>
+        <member name="F:FileAgeRetainer.FileAgeRetainer.components">
+            <summary> 
+            Required designer variable.
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainer.Dispose(System.Boolean)">
+            <summary>
+            Clean up any resources being used.
+            </summary>
+            <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainer.InitializeComponent">
+            <summary> 
+            Required method for Designer support - do not modify 
+            the contents of this method with the code editor.
+            </summary>
+        </member>
+        <member name="T:FileAgeRetainer.FileAgeRetainerItem">
+            <summary>
+            a FileAgeRetainerItem - controls the various work functions and hosts cached dictionary.  FileAgeRetainerItem work independently with their own threads
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.AutoEventInstance">
+            <summary>
+            AutoResetEvent used by this retainer items queue watcher 
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.QueueWatcherInstance">
+            <summary>
+            queue watcher instance for this retainer item
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.QueueWatchTimer">
+            <summary>
+            queue watch timer for this retainer item
+            </summary>
+        </member>
+        <member name="F:FileAgeRetainer.FileAgeRetainerItem.QueueWatchTimerLock">
+            <summary>
+            object used for critical section locking by queue watcher
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.SerializationAutoEventInstance">
+            <summary>
+            AutoResetEvent used by this retainer items serialization worker
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.SerializationInstance">
+            <summary>
+            serialization worker instance, flush in memory dictionary for this retainer item to disk periodically to allow for service to restart / stop safely and resume without cache data loss
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.SerializationTimer">
+            <summary>
+            timer for operation of serialization worker
+            </summary>
+        </member>
+        <member name="F:FileAgeRetainer.FileAgeRetainerItem.SerializationTimerLock">
+            <summary>
+            object used for locking critical section by serialization worker threads
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.MaintenanceAutoEventInstance">
+            <summary>
+            AutoResetEvent used by file system maintenance worker
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.MaintenanceWorkerInstance">
+            <summary>
+            file system maintenance worker instance for this retainer item
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.MaintenanceWorkerTimer">
+            <summary>
+            timer used by file system maintenance wortker to control its frequency of action
+            </summary>
+        </member>
+        <member name="F:FileAgeRetainer.FileAgeRetainerItem.MainteanceWorkerTimerLock">
+            <summary>
+            object used for lock signalling entry/exit in/out of critical section of maintenance worker
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.FsMaintenanceRetainMonitoredObjectsMinutes">
+            <summary>
+            how long, in minutes, to retain an object before exposing it to aging action (e.g. deletion)
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.FsTypeChangeCausePreservationReset">
+            <summary>
+            true if file system change causes preservation time reset
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.FsChecksumChangeCausePreservationReset">
+            <summary>
+            true if file checksum changes cause preservation time reset
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.FsHashAlgorithm">
+            <summary>
+            hashing algorithm used
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.FsHashCalculateWholeDirectoryHashes">
+            <summary>
+            true if should has all directory contents - EXPENSIVE
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.QueueProcessorIgnoreChangedWhenCreatedThisBatch">
+            <summary>
+            true if change events for a file should be ignored when the item was created in the same timer block as the change occured - supresses processing multiple change events which occur as atomic operations on things like a file create
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.FsRenameCausePreservationReset">
+            <summary>
+            true if file system object rename causes preservation time reset
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.CacheSerializationCacheTooOldDays">
+            <summary>
+            the number of days over which a serialized cache is considered 'too old' and is ignored - dictionary rebuilt in this case, and all items considered 'new' 
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.FsMaintenanceAttemptOportunisticCompression">
+            <summary>
+            true if file system mainteance should include opportunistic compression (NOT YET IMPLEMENTED)
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.FsMaintenanceAllowPerItemAging">
+            <summary>
+            true if mainteance worker should perform per item aging actions - this will result in deletions happening in sweeps, from furthest down the file system tree to nearest root as directories age out and are deleted - respects options for never deleting directories, minimum preservation depth etc via other settings
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.FsMaintenancePreservationDepth">
+            <summary>
+            the depth of file system objects files/directories which should be preserved regardless of their age - 0, anything under root OK. e.g. 1 on c:\temp\... would preserve c:\temp\preserveme directory and c:\temp\dontdeleteme.txt but NOT c:\temp\preserveme\killthis or c:\temp\preserveme\somefile.txt
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.FsMaintenanceNeverDeleteDirectories">
+            <summary>
+            never delete directories, only ever files.  will leave empty directories in file system as files age out.  use with FsMaintenanceResetExpiredDirectoriesIfNeverDelete to stop directories legitimately thought to be aged from reappearing in processing results for this mainteance worker
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.FsMaintenanceResetExpiredDirectoriesIfNeverDelete">
+            <summary>
+            if never delete directories, set to true to reset preservation start time to now, will prevent maintenance worker from having to process and ignore all directory items considered aged legitimately. optimization, typically set true
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.FsMaintenanceOnlyDeleteFolderContentsAsGroup">
+            <summary>
+            only delete a file if all other files in the directory in which it exist are ALSO aged
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.RootConfigItem">
+            <summary>
+            the root config item that this Maintenacne worker is based on
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.RootType">
+            <summary>
+            FSObjType of the root of this mainteance worker - file/directory/notExist
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.Subtree">
+            <summary>
+            true if the subtree of the root is being maintained
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.FsWatchRoot">
+            <summary>
+            clean root path as appropriate for FileSystemWatcher instantiation for this maintenance worker
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FileAgeRetainerItem.Filter">
+            <summary>
+            the filter used for this maintenance worker's filesystemwatcher - NOT YET IMPLEMENTED, assumed *.*
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainerItem.#ctor(System.String)">
+            <summary>
+            instantiate a FileAgeRetainerItem for the specified rootItemString - setup dictionary, configure and start a FileSystemWatcher, setup and start a 'queue watcher' worker, setup and start a 'serialization worker', setup and start a FsMaintenanceWorker
+            </summary>
+            <param name="rootItemString">the config item string for the retainer item e.g. "c:\temp\..."</param>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainerItem.SetPerConfigItemOverrides(System.String)">
+            <summary>
+            parse per config item options from lines in app.config RetainedFileRoots - override global defaults for this config line item
+            </summary>
+            <param name="rootItemString">the config line item string to parse</param>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainerItem.SetGlobalApplicationDefaults">
+            <summary>
+            configure global options from app.config for this FileAgeRetainerItem - any overrides to this default config should be processed after this default init
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainerItem.GetRootType(System.String)">
+            <summary>
+            get root object type from config line item
+            </summary>
+            <param name="v">the confile line item to check</param>
+            <returns>the object type of the root</returns>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainerItem.GetSubtreeForConfigItem(System.String)">
+            <summary>
+            determine if config item string sets 'subtree' as indicated by trailing ... - e.g. c:\temp\...
+            </summary>
+            <param name="v">config string</param>
+            <returns>true if subtree should be monitored by the retainer FileSystemWatcher</returns>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainerItem.TrimRootOptionsSuffix(System.String)">
+            <summary>
+            trim the config line item - for the purposes of obtaining a clean file root from the config line item
+            </summary>
+            <param name="rootConfigWatchString">config line item</param>
+            <returns>trimmed string</returns>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainerItem.GetCleanRootandSetObjType(System.String)">
+            <summary>
+            obtain a clean file path of the config line item root
+            </summary>
+            <param name="v">config line item</param>
+            <returns>clean root string and _RootType set as appropriate to the root in this object</returns>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainerItem.SetupMaintenanceWorker">
+            <summary>
+            configure and start a FS Maintenance worker for this retainer item
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainerItem.SetupSerializationWorker">
+            <summary>
+            configure and start a serialization worker for this retainer item
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainerItem.Shutdown">
+            <summary>
+            things to do when a retainer item is to be shutdown, typically as service stop
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainerItem.InitializeFsCachedInfoDictionary">
+            <summary>
+            initialize the caches fs info dictionary for this retainer item
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainerItem.BuildDictionary">
+            <summary>
+            build the dictionary for this retainer item assuming no knowledge
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainerItem.VerifyDictionary">
+            <summary>
+            verify a deserialized dictionary
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainerItem.SetupFileSystemWatcher(System.String)">
+            <summary>
+            setup and start a FileSystemWatcher for this retainer item root
+            </summary>
+            <param name="cleanRoot">clean root as appropriate for FileSystemWatcher instantiation</param>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainerItem.OnChanged(System.Object,System.IO.FileSystemEventArgs)">
+            <summary>
+            enqueue a changed event, to be processed by QueueWatcher instance for this retainer
+            </summary>
+            <param name="sender">sender metadata, not used</param>
+            <param name="e">the FileSystemEventArgs directly enqueued for speed, QueueWatcher will process this</param>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainerItem.OnCreated(System.Object,System.IO.FileSystemEventArgs)">
+            <summary>
+            enqueue a created event, to be processed by QueueWatcher instance for this retainer
+            </summary>
+            <param name="sender">sender metadata, not used</param>
+            <param name="e">the FileSystemEventArgs directly enqueued for speed, QueueWatcher will process this</param>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainerItem.OnDeleted(System.Object,System.IO.FileSystemEventArgs)">
+            <summary>
+            enqueue a deleted event, to be processed by QueueWatcher instance for this retainer
+            </summary>
+            <param name="sender">sender metadata, not used</param>
+            <param name="e">the FileSystemEventArgs directly enqueued for speed, QueueWatcher will process this</param>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainerItem.OnRenamed(System.Object,System.IO.RenamedEventArgs)">
+            <summary>
+            enqueue a renamed event, to be processed by QueueWatcher instance for this retainer
+            </summary>
+            <param name="sender">sender metadata, not used</param>
+            <param name="e">the RenamedEventArgs directly enqueued for speed, QueueWatcher will process this</param>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainerItem.OnError(System.Object,System.IO.ErrorEventArgs)">
+            <summary>
+            fires on FileSystemWatcher error for this retainer item - e.g. buffer overruns from extreme file system event rate
+            </summary>
+            <param name="source">sender metadata, not used</param>
+            <param name="e">the event data, including any exception generated</param>
+        </member>
+        <member name="M:FileAgeRetainer.FileAgeRetainerItem.StopFsWatcher">
+            <summary>
+            execute when shutting down the FileSystemWatcher for this retainer item
+            </summary>
+        </member>
+        <member name="T:FileAgeRetainer.FsMaintenanceWorker">
+            <summary>
+            File System Maintenance Worker - responsible for implementing aging actions such as deletions, compression (when implemented) etc.  will directly update corresponding retainer item dictionary directly on occasion
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FsMaintenanceWorker.RootConfigItem">
+            <summary>
+            root config item for this maintenance worker
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FsMaintenanceWorker.FsWatchRoot">
+            <summary>
+            file system watch root for this maintenance worker
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FsMaintenanceWorker.Filter">
+            <summary>
+            filter for the maintenance worker watcher
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FsMaintenanceWorker.RootType">
+            <summary>
+            root object type
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FsMaintenanceWorker.RetainMonitoredObjectsMinutes">
+            <summary>
+            how long in minutes to retain items
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FsMaintenanceWorker.FsMaintenanceAllowPerItemAging">
+            <summary>
+            allow per item aging on resources for this worker
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FsMaintenanceWorker.FsMaintenancePreservationDepth">
+            <summary>
+            minimum preservation depth
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FsMaintenanceWorker.FsMaintenanceNeverDeleteDirectories">
+            <summary>
+            never delete directories if true
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FsMaintenanceWorker.FsMaintenanceResetExpiredDirectoriesIfNeverDelete">
+            <summary>
+            reset expired directory if never deleting them - use true to reduce impact of repeatedly processing directories will not delete due to config options
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.FsMaintenanceWorker.FsMaintenanceOnlyDeleteFolderContentsAsGroup">
+            <summary>
+            only perform object deletion if all other fs objects in path subtree are older than the aging threshold
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.FsMaintenanceWorker.#ctor(System.String,System.String,System.Int64,System.Boolean,System.Int32,System.Boolean,System.Boolean,System.Boolean)">
+            <summary>
+            instantiate a file system maintenance worker
+            </summary>
+            <param name="RootConfigItem">root config item</param>
+            <param name="fsWatchRoot">file watcher root</param>
+            <param name="FsMaintenanceRetainMonitoredObjectsMinutes">minutes to keep files before exposing to aging actions</param>
+            <param name="FsMaintenanceAllowPerItemAging">true to allow per item aging</param>
+            <param name="FsMaintenancePreservationDepth">preservation depth relative to root - 0 anything under root subject to aging actions</param>
+            <param name="FsMaintenanceNeverDeleteDirectories">true if should never delete objects of type directory</param>
+            <param name="FsMaintenanceResetExpiredDirectoriesIfNeverDelete">true if should reset aging timer on expired directories if never delete directories true</param>
+            <param name="FsMaintenanceOnlyDeleteFolderContentsAsGroup">only delete an item if all other items in the subtree are also aged</param>
+        </member>
+        <member name="M:FileAgeRetainer.FsMaintenanceWorker.PerformFsMaintenance(System.Object)">
+            <summary>
+            perform file system maintenance tasks
+            </summary>
+            <param name="state">state metadata, used by event reset</param>
+        </member>
+        <member name="M:FileAgeRetainer.FsMaintenanceWorker.PerformMaintenance">
+            <summary>
+            perform file system maintenance
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.FsMaintenanceWorker.PerformPerItemAgeBasedDeletions(System.Int64)">
+            <summary>
+            perform per item aging deletions based on boundary ticks - timespan greater than preservation minutes for config line item (or defaults if not specified)
+            </summary>
+            <param name="boundaryTicks"></param>
+        </member>
+        <member name="M:FileAgeRetainer.Program.Main">
+            <summary>
+            The main entry point for the application.
+            </summary>
+        </member>
+        <member name="T:FileAgeRetainer.ProjectInstaller">
+            <summary>
+            project installer for the FileAgeRetainer
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.ProjectInstaller.#ctor">
+            <summary>
+            instantiator for project installer
+            </summary>
+        </member>
+        <member name="F:FileAgeRetainer.ProjectInstaller.components">
+            <summary>
+            Required designer variable.
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.ProjectInstaller.Dispose(System.Boolean)">
+            <summary> 
+            Clean up any resources being used.
+            </summary>
+            <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        </member>
+        <member name="M:FileAgeRetainer.ProjectInstaller.InitializeComponent">
+            <summary>
+            Required method for Designer support - do not modify
+            the contents of this method with the code editor.
+            </summary>
+        </member>
+        <member name="T:FileAgeRetainer.QueueWatcher">
+            <summary>
+            queue watcher for a retainer item, processes enqueued events from associated file system watcher
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.QueueWatcher.QueueProcessorIgnoreChangedWhenCreatedThisBatch">
+            <summary>
+            true if should ignore change events when item created in this worker operation cycle
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.QueueWatcher.RootConfigItem">
+            <summary>
+            root config item for this queue watcher
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.QueueWatcher.RetainersListIndex">
+            <summary>
+            position in list where this queue watchers retainer item is located - need to find dictionary etc.
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.QueueWatcher.FsTypeChangeCausePreservationReset">
+            <summary>
+            true if type change causes preservation time reset
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.QueueWatcher.FsChecksumChangeCausePreservationReset">
+            <summary>
+            trye if checksum change causes preservation time reset
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.QueueWatcher.FsRenameCausePreservationReset">
+            <summary>
+            true if rename causes preservation reset
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.QueueWatcher.FsHashAlgorithm">
+            <summary>
+            hash algorithm for this queue watcher
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.QueueWatcher.FsHashCalculateWholeDirectoryHashes">
+            <summary>
+            true if whole directory hashes should be created - EXPENSIVE
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.QueueWatcher.#ctor(System.String,System.Boolean,System.Boolean,System.Boolean,System.Boolean,FileAgeRetainer.CommonComponents.FsHashAlgorithm,System.Boolean)">
+            <summary>
+            instantiate QueueWatcher instance
+            </summary>
+            <param name="RootConfigItem">root config item</param>
+            <param name="QueueProcessorIgnoreChangedWhenCreatedThisBatch">ignore changes when fs object created in this opertation cycle of queue watcher</param>
+            <param name="FsTypeChangeCausePreservationReset">true if type change causes preservation time reset</param>
+            <param name="FsChecksumChangeCausePreservationReset">true if file system object changes cause preservation time reset</param>
+            <param name="FsRenameCausePreservationReset">true if renamed fs objects cause preservation time reset</param>
+            <param name="hashAlgorithm">hash algorithm in use for this queue watcher</param>
+            <param name="FsHashCalculateWholeDirectoryHashes">true if should calculate full directory subtree hashes on directories - EXPENSIVE</param>
+        </member>
+        <member name="M:FileAgeRetainer.QueueWatcher.ProcessQueues(System.Object)">
+            <summary>
+            process queues for the associated retainer item
+            </summary>
+            <param name="state">state metadata used for auto reset</param>
+        </member>
+        <member name="M:FileAgeRetainer.QueueWatcher.ProcessDeletedEvent(System.IO.FileSystemEventArgs)">
+            <summary>
+            process an event that fired due to fs object deletion
+            </summary>
+            <param name="e">the event that occured</param>
+        </member>
+        <member name="M:FileAgeRetainer.QueueWatcher.ProcessAllRenamedEvents">
+            <summary>
+            process all renamed events in associated retainer item queue
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.QueueWatcher.ProcessRenamedEvent(System.IO.RenamedEventArgs)">
+            <summary>
+            process a renamed event
+            </summary>
+            <param name="e">the event that occured</param>
+        </member>
+        <member name="M:FileAgeRetainer.QueueWatcher.RenameCachedFsSubtree(System.IO.RenamedEventArgs)">
+            <summary>
+            process renaming of a cache file system subtree on directory rename - only rename event that will fire is for root of rename folder - so need to update all cached entries that were under old path
+            </summary>
+            <param name="e">the event that occured</param>
+        </member>
+        <member name="M:FileAgeRetainer.QueueWatcher.RenameCachedFsItem(System.IO.RenamedEventArgs)">
+            <summary>
+            rename a cached event item based on the event data
+            </summary>
+            <param name="e">the event that occured</param>
+        </member>
+        <member name="M:FileAgeRetainer.QueueWatcher.RenameCachedFsItem(System.String,System.String)">
+            <summary>
+            rename a cached event item based on passed parameters
+            </summary>
+            <param name="oldFullPath">old full path - the existing key in dictionary</param>
+            <param name="fullPath">new full path - the new key in dictionary</param>
+        </member>
+        <member name="M:FileAgeRetainer.QueueWatcher.ProcessAllCreatedEvents">
+            <summary>
+            process all created events in associated retainer item queue
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.QueueWatcher.ProcessCreatedEvent(System.IO.FileSystemEventArgs)">
+            <summary>
+            process a created item event
+            </summary>
+            <param name="e">the event that occured</param>
+        </member>
+        <member name="M:FileAgeRetainer.QueueWatcher.ProcessAllChangedEvents">
+            <summary>
+            process all changed events in the associated retainer item queue
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.QueueWatcher.ProcessChangedEvent(System.IO.FileSystemEventArgs)">
+            <summary>
+            process a changed item event
+            </summary>
+            <param name="e">the event that occured</param>
+        </member>
+        <member name="P:FileAgeRetainer.SerializationWorker.RootConfigItem">
+            <summary>
+            root config item for this serialization worker
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.SerializationWorker.HashForSerialize">
+            <summary>
+            hash of the file name to be used for the serialization - done in the hashing algorithm associated with this item's retainer, based on the root config item string
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.SerializationWorker.#ctor(System.String)">
+            <summary>
+            instantiate a serialization worker for a root config item
+            </summary>
+            <param name="RootConfigItem">root config item string</param>
+        </member>
+        <member name="M:FileAgeRetainer.SerializationWorker.SerializeDictionary(System.Object)">
+            <summary>
+            perform dictionary serialization for associated retainer
+            </summary>
+            <param name="state">state metadata used for auto reset</param>
+        </member>
+        <member name="M:FileAgeRetainer.SerializationWorker.SerializeDictionary">
+            <summary>
+            perform dictionary serialization for the associated retainer item file output working directory, config line item string hash.hashing algorithm
+            </summary>
+        </member>
+        <member name="T:FileAgeRetainer.SlackClient">
+            <summary>
+            A simple C# class to post messages to a Slack channel 
+            Note: This class uses the Newtonsoft Json.NET serializer available via NuGet 
+            </summary>
+        </member>
+        <member name="M:FileAgeRetainer.SlackClient.#ctor(System.String)">
+            <summary>
+            instantiate slack client with web hook url to use
+            </summary>
+            <param name="urlWithAccessToken">web hook url to use</param>
+        </member>
+        <member name="M:FileAgeRetainer.SlackClient.PostMessage(System.String,System.String,System.String)">
+            <summary>
+            Post a message using simple strings
+            </summary>
+            <param name="text">text of message</param>
+            <param name="username">username, default is null</param>
+            <param name="channel">channel, default is null</param>
+        </member>
+        <member name="M:FileAgeRetainer.SlackClient.PostMessage(FileAgeRetainer.Payload)">
+            <summary>
+            Post a message using a Payload object 
+            </summary>
+            <param name="payload">payload object</param>
+        </member>
+        <member name="T:FileAgeRetainer.Payload">
+            <summary>
+            This class serializes into the Json payload required by Slack Incoming WebHooks 
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.Payload.Channel">
+            <summary>
+            slack channel to use
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.Payload.Username">
+            <summary>
+            username to use
+            </summary>
+        </member>
+        <member name="P:FileAgeRetainer.Payload.Text">
+            <summary>
+            text of message
+            </summary>
+        </member>
+    </members>
+</doc>

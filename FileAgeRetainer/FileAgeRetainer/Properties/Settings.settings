@@ -1,0 +1,85 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="FileAgeRetainer.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="DiagnosticsEventsource" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">FileAgeRetainer</Value>
+    </Setting>
+    <Setting Name="RetainedFileRoots" Type="System.Collections.Specialized.StringCollection" Scope="Application">
+      <Value Profile="(Default)">&lt;?xml version="1.0" encoding="utf-16"?&gt;
+&lt;ArrayOfString xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"&gt;
+  &lt;string&gt;c:\temp\...&lt;/string&gt;
+  &lt;string&gt;d:\temp\...|FsMaintenanceRetainMonitoredObjectsMinutes:1|FsChecksumChangeCausePreservationReset:false|FsHashAlgorithm:SHA1&lt;/string&gt;
+&lt;/ArrayOfString&gt;</Value>
+    </Setting>
+    <Setting Name="FsWatchInternalBufferBytes" Type="System.Int32" Scope="Application">
+      <Value Profile="(Default)">65536</Value>
+    </Setting>
+    <Setting Name="CacheWorkerBlockMaxParrallelism" Type="System.Int32" Scope="Application">
+      <Value Profile="(Default)">50</Value>
+    </Setting>
+    <Setting Name="FsTypeCheckToleranceSeconds" Type="System.Single" Scope="Application">
+      <Value Profile="(Default)">0.1</Value>
+    </Setting>
+    <Setting Name="FsTypeChangeCausePreservationReset" Type="System.Boolean" Scope="Application">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="FsMaintenanceRetainMonitoredObjectsMinutes" Type="System.Int64" Scope="Application">
+      <Value Profile="(Default)">10</Value>
+    </Setting>
+    <Setting Name="FsChecksumChangeCausePreservationReset" Type="System.Boolean" Scope="Application">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="QueueProcesserTimerIntervalMs" Type="System.Int32" Scope="Application">
+      <Value Profile="(Default)">2000</Value>
+    </Setting>
+    <Setting Name="FsHashAlgorithm" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">xxHash</Value>
+    </Setting>
+    <Setting Name="FsHashCalculateWholeDirectoryHashes" Type="System.Boolean" Scope="Application">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="QueueProcessorIgnoreChangedWhenCreatedThisBatch" Type="System.Boolean" Scope="Application">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="FsRenameCausePreservationReset" Type="System.Boolean" Scope="Application">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="CacheSerializationFrequencyMs" Type="System.Int32" Scope="Application">
+      <Value Profile="(Default)">60000</Value>
+    </Setting>
+    <Setting Name="CacheSerializationCacheTooOldDays" Type="System.Double" Scope="Application">
+      <Value Profile="(Default)">2</Value>
+    </Setting>
+    <Setting Name="FsMaintenanceWorkerFrequencyMs" Type="System.Int32" Scope="Application">
+      <Value Profile="(Default)">60000</Value>
+    </Setting>
+    <Setting Name="FsMaintenanceWorkerInitialDelayMs" Type="System.Int32" Scope="Application">
+      <Value Profile="(Default)">60000</Value>
+    </Setting>
+    <Setting Name="FsMaintenanceAttemptOportunisticCompression" Type="System.Boolean" Scope="Application">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="FsMaintenanceAllowPerItemAging" Type="System.Boolean" Scope="Application">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="DiagnosticsEventHandlerSlackWebHook" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">https://hooks.slack.com/services/theMagicNumberThing</Value>
+    </Setting>
+    <Setting Name="FsMaintenancePreservationDepth" Type="System.Int32" Scope="Application">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="FsMaintenanceNeverDeleteDirectories" Type="System.Boolean" Scope="Application">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="FsMaintenanceResetExpiredDirectoriesIfNeverDelete" Type="System.Boolean" Scope="Application">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="FsMaintenanceOnlyDeleteFolderContentsAsGroup" Type="System.Boolean" Scope="Application">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="DiagnosticsEventLog" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">Application</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
