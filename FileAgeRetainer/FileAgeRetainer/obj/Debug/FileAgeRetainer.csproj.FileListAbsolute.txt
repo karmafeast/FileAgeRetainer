@@ -36,7 +36,6 @@ C:\source\FileAgeRetainer\FileAgeRetainer\FileAgeRetainer\bin\Debug\System.Threa
 C:\source\FileAgeRetainer\FileAgeRetainer\FileAgeRetainer\obj\Debug\FileAgeRetainer.FileAgeRetainer.resources
 C:\source\FileAgeRetainer\FileAgeRetainer\FileAgeRetainer\obj\Debug\FileAgeRetainer.ProjectInstaller.resources
 C:\source\FileAgeRetainer\FileAgeRetainer\FileAgeRetainer\obj\Debug\FileAgeRetainer.csproj.GenerateResource.Cache
-C:\source\FileAgeRetainer\FileAgeRetainer\FileAgeRetainer\obj\Debug\FileAgeRetainer.csprojResolveAssemblyReference.cache
 D:\temp\fileageretainer\FileAgeRetainer\FileAgeRetainer\bin\Debug\FileAgeRetainer.exe.config
 D:\temp\fileageretainer\FileAgeRetainer\FileAgeRetainer\bin\Debug\FileAgeRetainer.XML
 D:\temp\fileageretainer\FileAgeRetainer\FileAgeRetainer\bin\Debug\FileAgeRetainer.exe
@@ -79,3 +78,5 @@ C:\source\fileageretainer\FileAgeRetainer\FileAgeRetainer\FileAgeRetainer\obj\De
 C:\source\fileageretainer\FileAgeRetainer\FileAgeRetainer\FileAgeRetainer\obj\Debug\FileAgeRetainer.csproj.CopyComplete
 C:\source\fileageretainer\FileAgeRetainer\FileAgeRetainer\FileAgeRetainer\obj\Debug\FileAgeRetainer.exe
 C:\source\fileageretainer\FileAgeRetainer\FileAgeRetainer\FileAgeRetainer\obj\Debug\FileAgeRetainer.pdb
+C:\source\FileAgeRetainer\FileAgeRetainer\FileAgeRetainer\obj\Debug\FileAgeRetainer.csproj.CoreCompileInputs.cache
+C:\source\FileAgeRetainer\FileAgeRetainer\FileAgeRetainer\obj\Debug\FileAgeRetainer.csproj.CopyComplete

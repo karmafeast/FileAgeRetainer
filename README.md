@@ -3,6 +3,8 @@
 ## you can generate fancy documentation using the awful sandcastle tool
 ## code's marked up so it'll work.
 
+## SEE SUCH A HELP FILE IN THE ROOT OF REPO (from debug build, next to where you found this file)
+
 The service will bring up a list of FileAgeRetainer items from the app.config
 
 These will end up figuring out what index they are on on this list so they can access it directly.  

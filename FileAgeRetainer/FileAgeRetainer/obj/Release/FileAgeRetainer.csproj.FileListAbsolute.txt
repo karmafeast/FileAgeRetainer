@@ -70,3 +70,6 @@ C:\source\fileageretainer\FileAgeRetainer\FileAgeRetainer\FileAgeRetainer\obj\Re
 C:\source\fileageretainer\FileAgeRetainer\FileAgeRetainer\FileAgeRetainer\obj\Release\FileAgeRetainer.csproj.CoreCompileInputs.cache
 C:\source\fileageretainer\FileAgeRetainer\FileAgeRetainer\FileAgeRetainer\obj\Release\FileAgeRetainer.csproj.CopyComplete
 C:\source\fileageretainer\FileAgeRetainer\FileAgeRetainer\FileAgeRetainer\obj\Release\FileAgeRetainer.exe
+C:\source\FileAgeRetainer\FileAgeRetainer\FileAgeRetainer\obj\Release\FileAgeRetainer.csproj.CoreCompileInputs.cache
+C:\source\FileAgeRetainer\FileAgeRetainer\FileAgeRetainer\obj\Release\FileAgeRetainer.csproj.CopyComplete
+C:\source\FileAgeRetainer\FileAgeRetainer\FileAgeRetainer\obj\Release\FileAgeRetainer.csprojResolveAssemblyReference.cache

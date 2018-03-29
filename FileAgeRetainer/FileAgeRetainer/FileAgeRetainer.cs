@@ -13,6 +13,9 @@ using System.IO;
 using System.Threading.Tasks.Dataflow;
 using System.Threading;
 
+/// <summary>
+/// do stuff with files...
+/// </summary>
 namespace FileAgeRetainer
 {
     /// <summary>
